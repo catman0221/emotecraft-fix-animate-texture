@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "Emotecraft_fix_animate_texture.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "emotecraft_fix_animate_texture.refmap.json",
+  "client": [
+    "EMFAnimationEntityContextMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
