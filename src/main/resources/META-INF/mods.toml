@@ -8,6 +8,7 @@ version = "${mod_version}"
 displayName = "${mod_name}"
 displayURL = "https://www.curseforge.com/members/catman0221/projects"
 authors = "${mod_authors}"
+logoFile = "icon.png"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''${mod_description}'''
 
