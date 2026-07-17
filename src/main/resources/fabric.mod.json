@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "emotecraft_fix_animate_texture",
+  "version": "${version}",
+  "name": "Emotecraft Fix Animate Texture",
+  "description": "Prevents Emotecraft from glitching with player animation resource packs such as Fresh Animations: Player Extension.",
+  "authors": ["Catman0221"],
+  "contributors": ["atleugim (Fabric 1.21.11 port)"],
+  "contact": {
+    "homepage": "https://www.curseforge.com/members/catman0221/projects"
+  },
+  "license": "All-Rights-Reserved",
+  "icon": "icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "Emotecraft_fix_animate_texture.Emotecraft_fix_animate_texture"
+    ]
+  },
+  "mixins": [
+    "emotecraft_fix_animate_texture.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "emotecraft": "*",
+    "entity_model_features": "*"
+  }
+}

@@ -4,7 +4,7 @@ import Emotecraft_fix_animate_texture.Emotecraft_fix_animate_texture;
 import Emotecraft_fix_animate_texture.state.EmoteStateManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.ModList;
+import net.fabricmc.loader.api.FabricLoader;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -35,7 +35,7 @@ public final class EmfCompat {
     }
 
     public static boolean isLoaded() {
-        return ModList.get().isLoaded(ENTITY_MODEL_FEATURES_MOD_ID);
+        return FabricLoader.getInstance().isModLoaded(ENTITY_MODEL_FEATURES_MOD_ID);
     }
 
     public static void registerHooks() {

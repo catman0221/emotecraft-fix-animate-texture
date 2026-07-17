@@ -2,7 +2,7 @@ package Emotecraft_fix_animate_texture.compat;
 
 import Emotecraft_fix_animate_texture.Emotecraft_fix_animate_texture;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.ModList;
+import net.fabricmc.loader.api.FabricLoader;
 
 import java.lang.reflect.Method;
 
@@ -19,7 +19,7 @@ public final class EmotecraftCompat {
     }
 
     public static boolean isLoaded() {
-        return ModList.get().isLoaded(EMOTECRAFT_MOD_ID);
+        return FabricLoader.getInstance().isModLoaded(EMOTECRAFT_MOD_ID);
     }
 
     public static boolean isPlayerEmoting(Player player) {
