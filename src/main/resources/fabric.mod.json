@@ -3,9 +3,13 @@
   "id": "emotecraft_fix_animate_texture",
   "version": "${version}",
   "name": "Emotecraft Fix Animate Texture",
-  "description": "Prevents Emotecraft from glitching with player animation resource packs such as Fresh Animations: Player Extension.",
-  "authors": ["Catman0221"],
-  "contributors": ["atleugim (Fabric 1.21.11 port)"],
+  "description": "Prevents Emotecraft emotes from conflicting with EMF player animations.",
+  "authors": [
+    "Catman0221"
+  ],
+  "contributors": [
+    "atleugim (Fabric 1.21.11 port)"
+  ],
   "contact": {
     "homepage": "https://www.curseforge.com/members/catman0221/projects"
   },
@@ -22,7 +26,7 @@
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
-    "minecraft": "~${minecraft_version}",
+    "minecraft": "${minecraft_version}",
     "java": ">=21",
     "fabric-api": "*"
   },

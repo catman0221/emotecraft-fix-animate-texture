@@ -1,9 +1,12 @@
 pluginManagement {
     repositories {
-        maven { url = 'https://maven.fabricmc.net/' }
+        maven {
+            name = "Fabric"
+            url = "https://maven.fabricmc.net/"
+        }
         gradlePluginPortal()
         mavenCentral()
     }
 }
 
-rootProject.name = 'emotecraft-fix-animate-texture'
+rootProject.name = "emotecraft-fix-animate-texture-fabric-1.21.1"
