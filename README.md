@@ -9,6 +9,7 @@ I originally made this mod for a server with friends. Its purpose is to temporar
 | Mod Loader | Minecraft Version | Branch |
 |---|---:|---|
 | Forge | 1.20.1 | `main` |
+| Fabric | 1.21.1 | `fabric-1.21.1` |
 | Fabric | 1.21.11 | `fabric-1.21.11` |
 
 The Forge and Fabric versions are maintained in separate branches to avoid mixing the configuration and source code of both mod loaders.
