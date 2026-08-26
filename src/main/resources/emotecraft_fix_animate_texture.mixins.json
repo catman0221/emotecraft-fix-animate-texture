@@ -5,7 +5,9 @@
   "plugin": "Emotecraft_fix_animate_texture.mixin.OptionalCompatMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "EMFAnimationEntityContextMixin"
+    "EMFAnimationEntityContextMixin",
+    "PlayerAnimatorAnimationApplierMixin",
+    "PlayerAnimatorBendHelperMixin"
   ],
   "injectors": {
     "defaultRequire": 0

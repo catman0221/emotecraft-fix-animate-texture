@@ -12,6 +12,10 @@ base {
 
 repositories {
     mavenCentral()
+    maven {
+        name = "KosmX"
+        url = "https://maven.kosmx.dev/"
+    }
 }
 
 dependencies {
@@ -19,6 +23,9 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Optional at runtime. BendyLib is compile-only and is never bundled.
+    modCompileOnly "io.github.kosmx.bendy-lib:bendy-lib-fabric:${project.bendylib_version}"
 }
 
 processResources {

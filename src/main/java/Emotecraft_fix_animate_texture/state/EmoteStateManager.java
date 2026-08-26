@@ -16,9 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class EmoteStateManager {
     private static final Map<UUID, Boolean> ACTIVE_EMOTES = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> LAST_SKIP_LOGS = new ConcurrentHashMap<>();
-    private static final long SKIP_LOG_COOLDOWN_MS = 5_000L;
-
     private EmoteStateManager() {
     }
 
@@ -36,13 +33,9 @@ public final class EmoteStateManager {
 
             boolean isActive = ActiveEmoteDetector.isPlayerEmoteActive(player);
             recordPlayerState(player, isActive);
-            if (!isActive) {
-                LAST_SKIP_LOGS.remove(uuid);
-            }
         }
 
         ACTIVE_EMOTES.keySet().removeIf(uuid -> !seenPlayers.contains(uuid));
-        LAST_SKIP_LOGS.keySet().removeIf(uuid -> !seenPlayers.contains(uuid));
     }
 
     public static boolean isEmoteActive(UUID playerId) {
@@ -62,30 +55,13 @@ public final class EmoteStateManager {
         }
     }
 
-    public static void onEmfAnimationSkipped(UUID playerId) {
-        if (!isEmoteActive(playerId)) {
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        Long previous = LAST_SKIP_LOGS.get(playerId);
-        if (previous != null && now - previous < SKIP_LOG_COOLDOWN_MS) {
-            return;
-        }
-
-        LAST_SKIP_LOGS.put(playerId, now);
-        Emotecraft_fix_animate_texture.LOGGER.debug("Skipping EMF player animation because emote is active for {}", playerId);
-    }
-
     public static void remove(UUID playerId) {
         ACTIVE_EMOTES.remove(playerId);
-        LAST_SKIP_LOGS.remove(playerId);
         EmfCompat.forgetPlayerState(playerId);
     }
 
     public static void clear() {
         ACTIVE_EMOTES.clear();
-        LAST_SKIP_LOGS.clear();
         EmfCompat.clearTrackedStates();
     }
 }

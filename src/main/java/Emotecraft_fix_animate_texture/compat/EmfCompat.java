@@ -7,30 +7,25 @@ import net.minecraft.world.entity.player.Player;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public final class EmfCompat {
     private static final String ENTITY_MODEL_FEATURES_MOD_ID = "entity_model_features";
     private static final String EMF_CONTEXT = "traben.entity_model_features.models.animation.EMFAnimationEntityContext";
     private static final String EMF_API = "traben.entity_model_features.EMFAnimationApi";
-    private static final long DEBUG_LOG_COOLDOWN_MS = 5_000L;
-
     private static boolean contextResolved;
     private static Method getCurrentEntityMethod;
     private static boolean apiResolved;
     private static boolean hooksRegistered;
+    private static boolean modernApiAvailable;
     private static Method registerPauseConditionMethod;
     private static Method registerVanillaModelConditionMethod;
-    private static Method getApiVersionMethod;
     private static Method lockEntityToVanillaModelMethod;
     private static Method unlockEntityToVanillaModelMethod;
     private static Method pauseAllCustomAnimationsForEntityMethod;
     private static Method resumeAllCustomAnimationsForEntityMethod;
-    private static final Map<String, Long> LAST_DEBUG_LOGS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Boolean> ACTIVE_EMF_SUPPRESSION = new ConcurrentHashMap<>();
+    private static final java.util.Map<UUID, Boolean> ACTIVE_EMF_SUPPRESSION = new java.util.concurrent.ConcurrentHashMap<>();
 
     private EmfCompat() {
     }
@@ -45,19 +40,24 @@ public final class EmfCompat {
         }
 
         resolveApi();
-        if (hooksRegistered || registerPauseConditionMethod == null) {
+        if (!modernApiAvailable) {
+            Emotecraft_fix_animate_texture.LOGGER.info("Modern EMF condition API unavailable; legacy compatibility fallback will be used");
+            return;
+        }
+        if (hooksRegistered) {
             return;
         }
 
         try {
-            Function<Object, Boolean> pauseCondition = emfEntity -> shouldSuppressRenderedPlayer(emfEntity, "EMF API pause condition");
-            Function<Object, Boolean> vanillaCondition = emfEntity -> shouldSuppressRenderedPlayer(emfEntity, "EMF API vanilla model condition");
+            // These callbacks execute from EMF's render path. They must remain pure:
+            // only read the state captured by ClientTick and return a boolean.
+            Function<Object, Boolean> pauseCondition = EmfCompat::isTrackedEmotingPlayer;
+            Function<Object, Boolean> vanillaCondition = EmfCompat::isTrackedEmotingPlayer;
 
             boolean pauseRegistered = Boolean.TRUE.equals(registerPauseConditionMethod.invoke(null, pauseCondition));
-            boolean vanillaRegistered = registerVanillaModelConditionMethod != null
-                    && Boolean.TRUE.equals(registerVanillaModelConditionMethod.invoke(null, vanillaCondition));
+            boolean vanillaRegistered = Boolean.TRUE.equals(registerVanillaModelConditionMethod.invoke(null, vanillaCondition));
 
-            hooksRegistered = pauseRegistered || vanillaRegistered;
+            hooksRegistered = pauseRegistered && vanillaRegistered;
             Emotecraft_fix_animate_texture.LOGGER.info("Registered EMF compatibility hooks: pauseCondition={}, vanillaModelCondition={}", pauseRegistered, vanillaRegistered);
         } catch (ReflectiveOperationException exception) {
             Emotecraft_fix_animate_texture.LOGGER.warn("Failed to register EMF compatibility hooks", exception);
@@ -69,7 +69,14 @@ public final class EmfCompat {
             return;
         }
 
-        resolveApi();
+        if (!apiResolved) {
+            return;
+        }
+        // Modern EMF is controlled exclusively by the two pure registered
+        // conditions. Never combine registerVanillaModelCondition with lock.
+        if (modernApiAvailable) {
+            return;
+        }
         if (pauseAllCustomAnimationsForEntityMethod == null
                 && resumeAllCustomAnimationsForEntityMethod == null
                 && lockEntityToVanillaModelMethod == null
@@ -80,7 +87,7 @@ public final class EmfCompat {
         UUID playerId = player.getUUID();
         Boolean previous = ACTIVE_EMF_SUPPRESSION.put(playerId, emoting);
         boolean stateChanged = previous == null || previous.booleanValue() != emoting;
-        if (!stateChanged && !emoting) {
+        if (!stateChanged) {
             return;
         }
 
@@ -88,21 +95,17 @@ public final class EmfCompat {
             if (emoting) {
                 boolean paused = invokeEntityOperation(pauseAllCustomAnimationsForEntityMethod, player);
                 boolean locked = invokeEntityOperation(lockEntityToVanillaModelMethod, player);
-                if (stateChanged) {
-                    Emotecraft_fix_animate_texture.LOGGER.debug(
-                            "Activated aggressive EMF suppression for player {} ({}): paused={}, lockedVanilla={}",
-                            player.getScoreboardName(), playerId, paused, locked
-                    );
-                }
+                Emotecraft_fix_animate_texture.LOGGER.debug(
+                        "Activated aggressive EMF suppression for player {} ({}): paused={}, lockedVanilla={}",
+                        player.getScoreboardName(), playerId, paused, locked
+                );
             } else {
                 boolean resumed = invokeEntityOperation(resumeAllCustomAnimationsForEntityMethod, player);
                 boolean unlocked = invokeEntityOperation(unlockEntityToVanillaModelMethod, player);
-                if (stateChanged) {
-                    Emotecraft_fix_animate_texture.LOGGER.debug(
-                            "Released aggressive EMF suppression for player {} ({}): resumed={}, unlockedVanilla={}",
-                            player.getScoreboardName(), playerId, resumed, unlocked
-                    );
-                }
+                Emotecraft_fix_animate_texture.LOGGER.debug(
+                        "Released aggressive EMF suppression for player {} ({}): resumed={}, unlockedVanilla={}",
+                        player.getScoreboardName(), playerId, resumed, unlocked
+                );
             }
         } catch (ReflectiveOperationException exception) {
             Emotecraft_fix_animate_texture.LOGGER.warn("Failed to sync EMF suppression state for player {}", playerId, exception);
@@ -122,43 +125,18 @@ public final class EmfCompat {
         return emfEntity instanceof Player player ? player : null;
     }
 
-    public static boolean shouldSuppressCurrentAnimatedPlayer(String source) {
+    public static boolean shouldSuppressCurrentAnimatedPlayer(String ignoredSource) {
         Player player = getCurrentAnimatedPlayer();
-        if (player == null) {
-            return false;
-        }
-
-        logDebug("mixin_enter_" + source + "_" + player.getUUID(),
-                "Entering EMF mixin for player {} ({}) via {}", player.getScoreboardName(), player.getUUID(), source);
-
-        boolean active = EmotecraftCompat.isPlayerEmoting(player);
-        EmoteStateManager.recordPlayerState(player, active);
-        if (active) {
-            logDebug("cancel_" + source + "_" + player.getUUID(),
-                    "Skipping EMF player animation because emote is active for {} ({}) via {}",
-                    player.getScoreboardName(), player.getUUID(), source);
-        } else {
-            logDebug("no_cancel_" + source + "_" + player.getUUID(),
-                    "EMF hook did not cancel for {} ({}) via {} because no active emote was detected",
-                    player.getScoreboardName(), player.getUUID(), source);
-        }
-        return active;
+        return player != null && EmoteStateManager.isEmoteActive(player.getUUID());
     }
 
-    private static boolean shouldSuppressRenderedPlayer(Object emfEntity, String source) {
-        Player player = extractPlayer(emfEntity);
-        if (player == null) {
-            return false;
-        }
+    public static boolean isModernApiAvailable() {
+        return apiResolved && modernApiAvailable;
+    }
 
-        boolean active = EmotecraftCompat.isPlayerEmoting(player);
-        EmoteStateManager.recordPlayerState(player, active);
-        if (active) {
-            logDebug("api_cancel_" + source + "_" + player.getUUID(),
-                    "Skipping EMF player animation because emote is active for {} ({}) via {}",
-                    player.getScoreboardName(), player.getUUID(), source);
-        }
-        return active;
+    private static boolean isTrackedEmotingPlayer(Object emfEntity) {
+        Player player = extractPlayer(emfEntity);
+        return player != null && EmoteStateManager.isEmoteActive(player.getUUID());
     }
 
     private static Player extractPlayer(Object emfEntity) {
@@ -211,21 +189,24 @@ public final class EmfCompat {
 
         apiResolved = true;
         try {
-            Class<?> apiClass = Class.forName(EMF_API);
-            Class<?> emfEntityClass = Class.forName("traben.entity_model_features.utils.EMFEntity");
+            ClassLoader classLoader = EmfCompat.class.getClassLoader();
+            Class<?> apiClass = Class.forName(EMF_API, false, classLoader);
 
-            getApiVersionMethod = tryResolve(apiClass, "getApiVersion");
             registerPauseConditionMethod = tryResolve(apiClass, "registerPauseCondition", Function.class);
             registerVanillaModelConditionMethod = tryResolve(apiClass, "registerVanillaModelCondition", Function.class);
-            lockEntityToVanillaModelMethod = tryResolve(apiClass, "lockEntityToVanillaModel", emfEntityClass);
-            unlockEntityToVanillaModelMethod = tryResolve(apiClass, "unlockEntityToVanillaModel", emfEntityClass);
-            pauseAllCustomAnimationsForEntityMethod = tryResolve(apiClass, "pauseAllCustomAnimationsForEntity", emfEntityClass);
-            resumeAllCustomAnimationsForEntityMethod = tryResolve(apiClass, "resumeAllCustomAnimationsForEntity", emfEntityClass);
+            modernApiAvailable = registerPauseConditionMethod != null && registerVanillaModelConditionMethod != null;
 
-            Object apiVersion = getApiVersionMethod == null ? null : getApiVersionMethod.invoke(null);
+            if (!modernApiAvailable) {
+                Class<?> emfEntityClass = Class.forName("traben.entity_model_features.utils.EMFEntity", false, classLoader);
+                lockEntityToVanillaModelMethod = tryResolve(apiClass, "lockEntityToVanillaModel", emfEntityClass);
+                unlockEntityToVanillaModelMethod = tryResolve(apiClass, "unlockEntityToVanillaModel", emfEntityClass);
+                pauseAllCustomAnimationsForEntityMethod = tryResolve(apiClass, "pauseAllCustomAnimationsForEntity", emfEntityClass);
+                resumeAllCustomAnimationsForEntityMethod = tryResolve(apiClass, "resumeAllCustomAnimationsForEntity", emfEntityClass);
+            }
+
             Emotecraft_fix_animate_texture.LOGGER.info(
-                    "Resolved aggressive EMF compatibility: apiVersion={}, pauseCondition={}, vanillaCondition={}, pause={}, resume={}, lockVanilla={}, unlockVanilla={}",
-                    apiVersion,
+                    "Resolved EMF compatibility: modernApi={}, pauseCondition={}, vanillaCondition={}, legacyPause={}, legacyResume={}, legacyLockVanilla={}, legacyUnlockVanilla={}",
+                    modernApiAvailable,
                     registerPauseConditionMethod != null,
                     registerVanillaModelConditionMethod != null,
                     pauseAllCustomAnimationsForEntityMethod != null,
@@ -234,6 +215,7 @@ public final class EmfCompat {
                     unlockEntityToVanillaModelMethod != null
             );
         } catch (ReflectiveOperationException exception) {
+            modernApiAvailable = false;
             Emotecraft_fix_animate_texture.LOGGER.warn("Failed to load the EMF animation API; mixin fallback will be used", exception);
         }
     }
@@ -248,16 +230,5 @@ public final class EmfCompat {
 
     private static boolean invokeEntityOperation(Method method, Player player) throws ReflectiveOperationException {
         return method != null && Boolean.TRUE.equals(method.invoke(null, player));
-    }
-
-    private static void logDebug(String key, String message, Object... args) {
-        long now = System.currentTimeMillis();
-        Long previous = LAST_DEBUG_LOGS.get(key);
-        if (previous != null && now - previous < DEBUG_LOG_COOLDOWN_MS) {
-            return;
-        }
-
-        LAST_DEBUG_LOGS.put(key, now);
-        Emotecraft_fix_animate_texture.LOGGER.debug(message, args);
     }
 }

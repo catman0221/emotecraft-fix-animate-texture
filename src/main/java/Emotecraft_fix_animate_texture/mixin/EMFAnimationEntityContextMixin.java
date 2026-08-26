@@ -1,7 +1,6 @@
 package Emotecraft_fix_animate_texture.mixin;
 
 import Emotecraft_fix_animate_texture.compat.EmfCompat;
-import Emotecraft_fix_animate_texture.state.EmoteStateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,19 +22,24 @@ public abstract class EMFAnimationEntityContextMixin {
 
     @Inject(method = "isEntityForcedToVanillaModel", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private static void emotecraft_fix_animate_texture$forceVanillaModel(CallbackInfoReturnable<Boolean> cir) {
+        if (EmfCompat.isModernApiAvailable()) {
+            return;
+        }
+
         if (EmfCompat.shouldSuppressCurrentAnimatedPlayer("EMFAnimationEntityContext.isEntityForcedToVanillaModel")) {
             cir.setReturnValue(true);
         }
     }
 
     private static void pauseIfPlayerIsEmoting(CallbackInfoReturnable<Boolean> cir, String source) {
+        if (EmfCompat.isModernApiAvailable()) {
+            return;
+        }
+
         if (!EmfCompat.shouldSuppressCurrentAnimatedPlayer(source)) {
             return;
         }
 
-        if (EmfCompat.getCurrentAnimatedPlayer() != null) {
-            EmoteStateManager.onEmfAnimationSkipped(EmfCompat.getCurrentAnimatedPlayer().getUUID());
-        }
         cir.setReturnValue(true);
     }
 }
