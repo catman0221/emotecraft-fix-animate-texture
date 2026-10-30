@@ -8,6 +8,7 @@ I originally made this mod for a server with friends. Its purpose is to temporar
 
 | Mod Loader | Minecraft Version | Branch |
 |---|---:|---|
+| Forge | 1.19.2 | `forge-1.19.2` |
 | Forge | 1.20.1 | `main` |
 | Fabric | 1.21.1 | `fabric-1.21.1` |
 | Fabric | 1.21.11 | `fabric-1.21.11` |
@@ -16,7 +17,7 @@ The Forge and Fabric versions are maintained in separate branches to avoid mixin
 
 ## Author
 
-- **Catman0221** — Original mod author and Forge 1.20.1 version
+- **Catman0221** — Original mod author and creator of Forge 1.20.1 and other versions
 
 ## Contributors
 
