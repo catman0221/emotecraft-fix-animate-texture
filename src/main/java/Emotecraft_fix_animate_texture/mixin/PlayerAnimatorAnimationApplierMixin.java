@@ -12,8 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "dev.kosmx.playerAnim.impl.animation.AnimationApplier", remap = false)
 public abstract class PlayerAnimatorAnimationApplierMixin {
     @Inject(
-            // ModelPart is class_630 in Fabric's production intermediary namespace for 1.21.1.
-            method = "updatePart(Ljava/lang/String;Lnet/minecraft/class_630;)V",
+            method = "updatePart",
             at = @At("HEAD"),
             remap = false
     )

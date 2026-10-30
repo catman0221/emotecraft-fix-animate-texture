@@ -27,12 +27,23 @@ public final class OptionalCompatMixinPlugin implements IMixinConfigPlugin {
             return FabricLoader.getInstance().isModLoaded(EMF_MOD_ID);
         }
 
+        if (mixinClassName.endsWith("ModelPartBendCopyMixin")) {
+            return FabricLoader.getInstance().isModLoaded(PLAYER_ANIMATOR_MOD_ID)
+                    && hasBendyLib();
+        }
+
         if (mixinClassName.endsWith("PlayerAnimatorBendHelperMixin")
                 || mixinClassName.endsWith("PlayerAnimatorAnimationApplierMixin")) {
-            return FabricLoader.getInstance().isModLoaded(PLAYER_ANIMATOR_MOD_ID);
+            return FabricLoader.getInstance().isModLoaded(PLAYER_ANIMATOR_MOD_ID) && hasBendyLib();
         }
 
         return true;
+    }
+
+    private static boolean hasBendyLib() {
+        // Check library availability without loading its classes during mixin selection.
+        return OptionalCompatMixinPlugin.class.getClassLoader()
+                .getResource("io/github/kosmx/bendylib/ModelPartAccessor.class") != null;
     }
 
     @Override

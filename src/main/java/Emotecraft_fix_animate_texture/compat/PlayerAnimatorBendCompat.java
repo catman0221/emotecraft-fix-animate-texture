@@ -2,6 +2,7 @@ package Emotecraft_fix_animate_texture.compat;
 
 import Emotecraft_fix_animate_texture.Emotecraft_fix_animate_texture;
 import io.github.kosmx.bendylib.ModelPartAccessor;
+import io.github.kosmx.bendylib.MutableCuboid;
 import io.github.kosmx.bendylib.impl.BendableCuboid;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.Direction;
@@ -15,6 +16,36 @@ public final class PlayerAnimatorBendCompat {
     private static final Set<String> FAILED_LOGGED_PARTS = ConcurrentHashMap.newKeySet();
 
     private PlayerAnimatorBendCompat() {
+    }
+
+    public static void prepareBendCopy(ModelPart source, ModelPart destination) {
+        if (source == null || destination == null || source == destination) {
+            return;
+        }
+        try {
+            var sources = ModelPartAccessor.getCuboids(source);
+            var destinations = ModelPartAccessor.getCuboids(destination);
+            if (sources == null || destinations == null) {
+                return;
+            }
+            for (int i = 0; i < Math.min(sources.size(), destinations.size()); i++) {
+                if (sources.get(i) instanceof MutableCuboid from
+                        && destinations.get(i) instanceof MutableCuboid to) {
+                    prepareCuboidCopy(from, to);
+                }
+            }
+        } catch (RuntimeException exception) {
+            logRepairFailure("skin-layer-copy");
+        }
+    }
+
+    public static void prepareCuboidCopy(MutableCuboid from, MutableCuboid to) {
+        var builder = from.getCuboidBuilder("bend");
+        if (builder != null && !to.hasMutator("bend")) {
+            // Reuse the factory, never the source's mutable geometry.
+            // This preserves torso/limb direction and cape pivots.
+            to.registerMutator("bend", builder);
+        }
     }
 
     public static void ensureBendMutator(String partName, ModelPart modelPart) {

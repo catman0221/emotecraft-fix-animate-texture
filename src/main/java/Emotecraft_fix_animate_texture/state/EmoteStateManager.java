@@ -35,7 +35,11 @@ public final class EmoteStateManager {
             recordPlayerState(player, isActive);
         }
 
-        ACTIVE_EMOTES.keySet().removeIf(uuid -> !seenPlayers.contains(uuid));
+        for (UUID uuid : new HashSet<>(ACTIVE_EMOTES.keySet())) {
+            if (!seenPlayers.contains(uuid)) {
+                remove(uuid);
+            }
+        }
     }
 
     public static boolean isEmoteActive(UUID playerId) {

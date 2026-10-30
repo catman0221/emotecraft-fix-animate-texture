@@ -26,8 +26,9 @@ public abstract class PlayerAnimatorBendHelperMixin {
     private static final Set<String> WARNED_MODEL_PART_TYPES = ConcurrentHashMap.newKeySet();
 
     @Inject(
-            // ModelPart is class_630 in the production intermediary namespace used by Fabric 1.21.1.
-            method = "bend(Lnet/minecraft/class_630;FF)V",
+            // Accept production Fabric and Mojang-mapped development/NeoForge.
+            method = {"bend(Lnet/minecraft/class_630;FF)V",
+                    "bend(Lnet/minecraft/client/model/geom/ModelPart;FF)V"},
             at = @At("HEAD"),
             cancellable = true,
             remap = false

@@ -42,3 +42,6 @@ gradle-app.setting
 
 # The Gradle wrapper JAR must remain in the repository
 !gradle-wrapper.jar
+
+# Local release audit snapshots
+.beta-review/
