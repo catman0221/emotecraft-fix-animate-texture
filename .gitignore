@@ -1,0 +1,31 @@
+# Gradle and generated outputs
+.gradle/
+**/build/
+out/
+run/
+runs/
+run-data/
+*.class
+*.log
+*.hprof
+hs_err_pid*
+replay_pid*
+# Local editors and tooling
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+# Local files and archives
+.env
+.env.*
+local.properties
+*.tmp
+*.bak
+*~
+*.jar
+*.zip
+!gradle/wrapper/gradle-wrapper.jar
+.DS_Store
+Thumbs.db
+Desktop.ini
